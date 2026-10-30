@@ -142,3 +142,73 @@ def test_documents_list_is_filtered_by_current_user():
     finally:
         app.dependency_overrides.pop(get_documents_db, None)
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_search_rejects_another_users_document():
+    fake_user = MagicMock(spec=User)
+    fake_user.id = 123
+
+    fake_db = MagicMock()
+    fake_db.execute.return_value.scalar_one_or_none.return_value = None
+
+    def override_db():
+        yield fake_db
+
+    def override_user():
+        return fake_user
+
+    app.dependency_overrides[get_documents_db] = override_db
+    app.dependency_overrides[get_current_user] = override_user
+
+    try:
+        response = client.post(
+            "/search",
+            json={
+                "query": "placement details",
+                "document_id": 999,
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == (
+            "Document not found or access denied."
+        )
+
+    finally:
+        app.dependency_overrides.pop(get_documents_db, None)
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_chat_rejects_another_users_document():
+    fake_user = MagicMock(spec=User)
+    fake_user.id = 123
+
+    fake_db = MagicMock()
+    fake_db.execute.return_value.scalar_one_or_none.return_value = None
+
+    def override_db():
+        yield fake_db
+
+    def override_user():
+        return fake_user
+
+    app.dependency_overrides[get_documents_db] = override_db
+    app.dependency_overrides[get_current_user] = override_user
+
+    try:
+        response = client.post(
+            "/chat",
+            json={
+                "question": "What is the package?",
+                "document_id": 999,
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == (
+            "Document not found or access denied."
+        )
+
+    finally:
+        app.dependency_overrides.pop(get_documents_db, None)
+        app.dependency_overrides.pop(get_current_user, None)

@@ -15,6 +15,7 @@ router = APIRouter(prefix="/chat", tags=["RAG Chat"])
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     limit: int = Field(default=5, ge=1, le=20)
+    document_id: int | None = Field(default=None, gt=0)
 
 
 @router.post("")
@@ -29,6 +30,7 @@ def chat(
             question=request.question.strip(),
             owner_id=current_user.id,
             limit=request.limit,
+            document_id=request.document_id,
         )
         return result
 
